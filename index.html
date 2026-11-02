@@ -33,6 +33,7 @@
   color-scheme: dark;
 }
 *, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html { height: 100%; scroll-padding-top: env(safe-area-inset-top, 0px); }
 body {
   height: 100%; margin: 0; background: var(--bg); color: var(--text);
@@ -250,14 +251,15 @@ video { object-fit: cover; }
       return;
     }
     try {
+      if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: false,
         video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }
       });
       video.srcObject = stream;
-      await video.play();
+      video.play().catch(() => {});
       msg.hidden = true; $('controls').hidden = false;
-      running = true; loop();
+      if (!running) { running = true; loop(); }
     } catch (err) {
       const blocked = err && (err.name === 'NotAllowedError' || err.name === 'SecurityError');
       msg.innerHTML = blocked

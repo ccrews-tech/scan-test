@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Card scan test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #EEF3F4; --surface: #FFFFFF; --text: #13232B; --muted: #5B6B72; --line: #D3DDE0;
+  --accent: #0E6E7E; --accent-text: #FFFFFF; --chip-empty: #F4F7F8;
+  --a: #2F6BD8; --b: #B97A08; --c: #17845E; --d: #B8366F;
+  --stage: #0C171C;
+  color-scheme: light;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1A1F; --surface: #17252C; --text: #E6EEF0; --muted: #93A4AB; --line: #2A3B43;
+    --accent: #4FB7C6; --accent-text: #08262B; --chip-empty: #1C2C34;
+    --a: #6E9BF0; --b: #E6AE3E; --c: #45C08F; --d: #E46FA3;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F1A1F; --surface: #17252C; --text: #E6EEF0; --muted: #93A4AB; --line: #2A3B43;
+  --accent: #4FB7C6; --accent-text: #08262B; --chip-empty: #1C2C34;
+  --a: #6E9BF0; --b: #E6AE3E; --c: #45C08F; --d: #E46FA3;
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { height: 100%; scroll-padding-top: env(safe-area-inset-top, 0px); }
+body {
+  height: 100%; margin: 0; background: var(--bg); color: var(--text);
+  font-family: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px; line-height: 1.4;
+  display: flex; flex-direction: column;
+}
+header {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--surface);
+}
+h1 { font-size: 1.15rem; margin: 0; }
+.inuse { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: .9rem; }
+.inuse button { width: 32px; height: 32px; }
+.inuse output { min-width: 2ch; text-align: center; color: var(--text); font-weight: 700; font-size: 1rem; }
+button {
+  font: inherit; color: var(--text); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 8px; cursor: pointer;
+}
+button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+main { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.stage { position: relative; flex: 1 1 55%; min-height: 220px; background: var(--stage); overflow: hidden; }
+video, #overlay { position: absolute; inset: 0; width: 100%; height: 100%; }
+video { object-fit: cover; }
+.stage-msg {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px; padding: 24px; text-align: center; color: #DCE7EA;
+}
+.stage-msg p { margin: 0; max-width: 34ch; }
+.primary {
+  background: var(--accent); color: var(--accent-text); border: 0;
+  padding: 12px 22px; font-weight: 700; font-size: 1.05rem; border-radius: 999px;
+}
+.stage-controls { position: absolute; left: 12px; right: 12px; bottom: 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; pointer-events: none; }
+.stage-controls > * { pointer-events: auto; }
+.pill {
+  background: rgba(8, 20, 25, .72); color: #E6EEF0; border: 0; border-radius: 999px;
+  padding: 8px 14px; font-size: .9rem;
+}
+.speed { font-size: .8rem; }
+.panel { flex: 1 1 45%; min-height: 0; overflow-y: auto; padding: 14px 16px 20px; display: grid; gap: 18px; align-content: start; }
+.count { display: flex; align-items: baseline; gap: 8px; }
+.count strong { font-size: 2.6rem; line-height: 1; }
+.count span { color: var(--muted); }
+.bars { display: grid; gap: 8px; }
+.bar { display: grid; grid-template-columns: 34px 1fr 3ch; align-items: center; gap: 10px; }
+.bar .tag { width: 30px; height: 30px; border-radius: 6px; display: grid; place-items: center; color: #fff; font-weight: 700; }
+.bar .track { height: 14px; background: var(--chip-empty); border-radius: 7px; overflow: hidden; }
+.bar .fill { height: 100%; width: 0; border-radius: 7px; transition: width .25s ease-out; }
+.bar .n { text-align: right; font-variant-numeric: tabular-nums; }
+.bar.key .tag { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--text); }
+.key-row { display: grid; gap: 8px; }
+.key-row h2, .cards h2 { font-size: .95rem; margin: 0; color: var(--muted); font-weight: 400; }
+.key-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.key-buttons button { width: 48px; height: 44px; font-weight: 700; font-size: 1.05rem; }
+.key-buttons button[aria-pressed="true"] { background: var(--text); color: var(--surface); border-color: var(--text); }
+.pct { font-weight: 700; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 6px; }
+.chip {
+  height: 46px; border-radius: 8px; border: 1px dashed var(--line); background: var(--chip-empty);
+  display: grid; place-items: center; font-size: .8rem; color: var(--muted); position: relative;
+}
+.chip b { font-size: 1rem; color: #fff; }
+.chip.done { border: 0; color: rgba(255,255,255,.85); }
+.chip.done .num { position: absolute; top: 3px; left: 5px; font-size: .65rem; }
+.chip.wrong { opacity: .45; }
+.footer-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.footer-actions button { padding: 10px 16px; }
+.note { color: var(--muted); font-size: .85rem; margin: 0; max-width: 60ch; }
+@media (min-width: 900px) {
+  main { flex-direction: row; }
+  .stage { flex: 1 1 60%; }
+  .panel { flex: 0 0 380px; border-left: 1px solid var(--line); }
+}
+@media (prefers-reduced-motion: reduce) { .bar .fill { transition: none; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Card scan test</h1>
+  <div class="inuse" aria-label="Cards in use">
+    Cards in use
+    <button id="less" aria-label="Fewer cards">−</button>
+    <output id="inuse">30</output>
+    <button id="more" aria-label="More cards">+</button>
+  </div>
+</header>
+<main>
+  <section class="stage" aria-label="Camera">
+    <video id="video" playsinline muted></video>
+    <canvas id="overlay"></canvas>
+    <div class="stage-msg" id="msg">
+      <p>Point your phone at the room. Students hold up cards with their answer letter on top.</p>
+      <button class="primary" id="start">Start camera</button>
+    </div>
+    <div class="stage-controls" id="controls" hidden>
+      <span class="pill speed" id="speed">Starting…</span>
+      <button class="pill" id="pause">Pause</button>
+    </div>
+  </section>
+  <section class="panel" aria-live="polite">
+    <div class="count"><strong id="scanned">0</strong><span id="ofText">of 30 cards scanned</span></div>
+    <div class="bars" id="bars"></div>
+    <div class="key-row">
+      <h2>Correct answer <span class="pct" id="pct"></span></h2>
+      <div class="key-buttons" id="keys"></div>
+    </div>
+    <div class="cards">
+      <h2>Cards</h2>
+      <div class="grid" id="grid"></div>
+    </div>
+    <div class="footer-actions">
+      <button id="clear">Clear answers</button>
+    </div>
+    <p class="note">This is a test page for scanning only. Answers aren’t saved anywhere and disappear when you clear or close the page.</p>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/js-aruco2@2.0.0/src/cv.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/js-aruco2@2.0.0/src/aruco.js"></script>
+<script>
+(function () {
+  const LETTERS = ['A', 'B', 'C', 'D'];
+  const css = getComputedStyle(document.documentElement);
+  const color = l => css.getPropertyValue('--' + l.toLowerCase()).trim();
+
+  // Keep nested candidates (card edge vs. marker edge) so small, far-away cards still read.
+  AR.Detector.prototype.notTooNear = function (c) { return c; };
+  const detector = new AR.Detector({ dictionaryName: 'ARUCO_MIP_36h12', maxHammingDistance: 5 });
+
+  let inUse = 30;
+  try { const s = parseInt(localStorage.getItem('scanTest.inUse'), 10); if (s >= 1 && s <= 40) inUse = s; } catch (e) {}
+  const answers = {};   // card index -> letter (confirmed)
+  const pending = {};   // card index -> {letter, hits}
+  let key = null, running = false, paused = false, lastMarkers = [];
+
+  const $ = id => document.getElementById(id);
+  const video = $('video'), overlay = $('overlay'), octx = overlay.getContext('2d');
+  const work = document.createElement('canvas'), wctx = work.getContext('2d', { willReadFrequently: true });
+
+  function letterFor(m) {
+    const p = m.corners;
+    const a = Math.atan2(p[1].y - p[0].y, p[1].x - p[0].x) * 180 / Math.PI;
+    if (a > -45 && a <= 45) return 'A';
+    if (a > -135 && a <= -45) return 'B';
+    if (a > 45 && a <= 135) return 'D';
+    return 'C';
+  }
+
+  // ----- Panel -----
+  function buildStatic() {
+    $('bars').innerHTML = LETTERS.map(l =>
+      `<div class="bar" id="bar${l}"><span class="tag" style="background:${color(l)}">${l}</span>` +
+      `<span class="track"><span class="fill" style="background:${color(l)}"></span></span><span class="n">0</span></div>`).join('');
+    $('keys').innerHTML = LETTERS.map(l => `<button aria-pressed="false" data-k="${l}">${l}</button>`).join('');
+    $('keys').querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+      key = key === b.dataset.k ? null : b.dataset.k; render();
+    }));
+  }
+  function render() {
+    $('inuse').textContent = inUse;
+    const ids = Object.keys(answers).map(Number).filter(i => i < inUse);
+    $('scanned').textContent = ids.length;
+    $('ofText').textContent = `of ${inUse} cards scanned`;
+    const counts = { A: 0, B: 0, C: 0, D: 0 };
+    ids.forEach(i => counts[answers[i]]++);
+    const max = Math.max(1, ...Object.values(counts));
+    LETTERS.forEach(l => {
+      const row = $('bar' + l);
+      row.querySelector('.fill').style.width = (counts[l] / max * 100) + '%';
+      row.querySelector('.n').textContent = counts[l];
+      row.classList.toggle('key', key === l);
+    });
+    $('keys').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.k === key)));
+    $('pct').textContent = key && ids.length ? `· ${Math.round(counts[key] / ids.length * 100)}% correct` : '';
+    let html = '';
+    for (let i = 0; i < inUse; i++) {
+      const a = answers[i];
+      if (a) {
+        const wrong = key && a !== key ? ' wrong' : '';
+        html += `<div class="chip done${wrong}" style="background:${color(a)}" aria-label="Card ${i + 1}: ${a}"><span class="num">${i + 1}</span><b>${a}</b></div>`;
+      } else {
+        html += `<div class="chip" aria-label="Card ${i + 1}: not scanned">${i + 1}</div>`;
+      }
+    }
+    $('grid').innerHTML = html;
+  }
+
+  function setInUse(n) {
+    inUse = Math.max(1, Math.min(40, n));
+    try { localStorage.setItem('scanTest.inUse', String(inUse)); } catch (e) {}
+    render();
+  }
+  $('less').addEventListener('click', () => setInUse(inUse - 1));
+  $('more').addEventListener('click', () => setInUse(inUse + 1));
+
+  let clearArmed = null;
+  $('clear').addEventListener('click', () => {
+    if (!clearArmed) {
+      $('clear').textContent = 'Tap again to clear';
+      clearArmed = setTimeout(() => { clearArmed = null; $('clear').textContent = 'Clear answers'; }, 3000);
+      return;
+    }
+    clearTimeout(clearArmed); clearArmed = null; $('clear').textContent = 'Clear answers';
+    Object.keys(answers).forEach(k => delete answers[k]);
+    Object.keys(pending).forEach(k => delete pending[k]);
+    render();
+  });
+
+  // ----- Camera -----
+  async function startCamera() {
+    const msg = $('msg');
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      msg.innerHTML = '<p>This browser can’t open the camera from this page. Try opening the page in its own tab in Chrome or Safari.</p>';
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+      });
+      video.srcObject = stream;
+      await video.play();
+      msg.hidden = true; $('controls').hidden = false;
+      running = true; loop();
+    } catch (err) {
+      const blocked = err && (err.name === 'NotAllowedError' || err.name === 'SecurityError');
+      msg.innerHTML = blocked
+        ? '<p>Camera access was blocked. Allow the camera for this page in your browser settings, or open the page in its own browser tab, then try again.</p><button class="primary" id="retry">Try again</button>'
+        : '<p>The camera couldn’t start (' + (err && err.name ? err.name : 'unknown error') + '). Close other apps using the camera and try again.</p><button class="primary" id="retry">Try again</button>';
+      $('retry').addEventListener('click', startCamera);
+    }
+  }
+  $('start').addEventListener('click', startCamera);
+  $('pause').addEventListener('click', () => {
+    paused = !paused;
+    $('pause').textContent = paused ? 'Resume' : 'Pause';
+    if (paused) { lastMarkers = []; drawOverlay(); $('speed').textContent = 'Paused'; }
+  });
+
+  let frames = 0, tick = performance.now();
+  function loop() {
+    if (!running) return;
+    if (!paused && video.readyState >= 2 && video.videoWidth) {
+      const scale = Math.min(1, 1920 / video.videoWidth);
+      const w = Math.round(video.videoWidth * scale), h = Math.round(video.videoHeight * scale);
+      if (work.width !== w) { work.width = w; work.height = h; }
+      wctx.drawImage(video, 0, 0, w, h);
+      const img = wctx.getImageData(0, 0, w, h);
+      const found = detector.detect(img);
+      handle(found, w, h);
+      frames++;
+      const now = performance.now();
+      if (now - tick > 1000) {
+        $('speed').textContent = `${w}×${h} · ${(frames * 1000 / (now - tick)).toFixed(1)} reads/sec`;
+        frames = 0; tick = now;
+      }
+    }
+    setTimeout(loop, 40);
+  }
+
+  function handle(found, w, h) {
+    const seen = new Set();
+    lastMarkers = [];
+    let changed = false;
+    for (const m of found) {
+      if (m.id >= inUse || seen.has(m.id)) continue;
+      seen.add(m.id);
+      const l = letterFor(m);
+      lastMarkers.push({ corners: m.corners, id: m.id, letter: l, w, h });
+      if (answers[m.id] === l) { delete pending[m.id]; continue; }
+      const p = pending[m.id];
+      if (p && p.letter === l) p.hits++; else pending[m.id] = { letter: l, hits: 1 };
+      if (pending[m.id].hits >= 2) {
+        answers[m.id] = l; delete pending[m.id]; changed = true;
+      }
+    }
+    if (changed) { if (navigator.vibrate) navigator.vibrate(12); render(); }
+    drawOverlay();
+  }
+
+  function drawOverlay() {
+    const cw = overlay.clientWidth, ch = overlay.clientHeight, dpr = window.devicePixelRatio || 1;
+    if (overlay.width !== Math.round(cw * dpr)) { overlay.width = Math.round(cw * dpr); overlay.height = Math.round(ch * dpr); }
+    octx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    octx.clearRect(0, 0, cw, ch);
+    for (const m of lastMarkers) {
+      const s = Math.max(cw / m.w, ch / m.h), ox = (cw - m.w * s) / 2, oy = (ch - m.h * s) / 2;
+      const pts = m.corners.map(p => ({ x: p.x * s + ox, y: p.y * s + oy }));
+      octx.beginPath();
+      pts.forEach((p, i) => i ? octx.lineTo(p.x, p.y) : octx.moveTo(p.x, p.y));
+      octx.closePath();
+      octx.lineWidth = 3; octx.strokeStyle = color(m.letter); octx.stroke();
+      const cx = pts.reduce((a, p) => a + p.x, 0) / 4, cy = pts.reduce((a, p) => a + p.y, 0) / 4;
+      const label = `${m.id + 1} ${m.letter}`;
+      octx.font = '700 14px "Atkinson Hyperlegible", system-ui, sans-serif';
+      const tw = octx.measureText(label).width;
+      octx.fillStyle = color(m.letter);
+      octx.fillRect(cx - tw / 2 - 6, cy - 11, tw + 12, 22);
+      octx.fillStyle = '#fff';
+      octx.fillText(label, cx - tw / 2, cy + 5);
+    }
+  }
+  window.addEventListener('resize', drawOverlay);
+
+  buildStatic();
+  render();
+})();
+</script>
+</body>
+</html>
